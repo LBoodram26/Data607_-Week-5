@@ -1,0 +1,19 @@
+---
+title: "5A_Airline Delays_Approach"
+author: "Lakeranie Boodram"
+date: "2026-09-30"
+output: html_document
+---
+## 5A – Airline Delays: Approach
+
+For this assignment, I will analyze airline arrival performance for Alaska Airlines and America West across five destinations: Los Angeles, Phoenix, San Diego, San Francisco, and Seattle. The original data is presented in a wide format and contains the number of flights that were either on time or delayed for each airline and destination.
+
+I will first recreate the provided dataset as a CSV file, keeping the same general structure as the original data. I will upload the CSV file to my public GitHub repository so that the data can be read directly from an internet source rather than only from a local computer.
+
+Using R, I will import the dataset and use packages from the tidyverse, mainly dplyr and tidyr, to clean and transform the data. Any missing values from the original dataset will also be handled in the code. I will then transform the data from a wide format into a long/tidy format, where each observation has its own row and each variable has its own column.
+
+After the data is cleaned, I will calculate the percentage of flights that were on time and delayed rather than comparing only the raw flight counts. I will compare the overall performance of Alaska Airlines and America West and then compare their performance separately for each of the five destinations.
+
+An important part of the analysis will be examining why the overall comparison may tell a different story than the city-by-city comparison. For example, one airline may appear to perform better overall even though the other airline performs better within individual destinations. I will investigate how the number and distribution of flights across the different cities contribute to this difference. 
+
+Finally, I will present the results using tables and/or visualizations and include a written explanation of the findings and conclusions in the R Markdown file and publish the HTML results. 
