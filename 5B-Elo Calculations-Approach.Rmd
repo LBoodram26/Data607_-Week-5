@@ -1,0 +1,38 @@
+---
+title: "5B-Elo Calculations-Approach"
+author: "Lakeranie Boodram"
+date: "2026-10-01"
+output: html_document
+---
+
+Assignment 5B – Elo Calculations: Approach
+
+For this assignment, I will use the Elo rating system to compare each chess player’s actual tournament performance with the performance that was expected based on their rating. The goal is to identify the five players who performed better than expected and the five players who performed worse than expected.
+
+First, I will review the tournament data from Project 1 and organize the information for each player and their opponents. I will use each player’s Elo rating before the tournament and compare it with the ratings of the opponents they played.
+
+Next, I will calculate the expected score for each matchup using the Elo expected-score formula:
+
+$$
+E_A = \frac{1}{1 + 10^{(R_B-R_A)/400}}
+$$
+
+where R_A is the rating of the player and R_B is the rating of the opponent.The expected score represents the score a player is predicted to earn against that opponent based on the difference in their Elo ratings. A higher-rated player should normally have a higher expected score, while a lower-rated player will have a lower expected score. This formula follows the Elo rating concepts explained in the assigned video. 
+
+I will calculate an expected score for every game played and then add the expected scores together to determine each player’s total expected tournament score.
+
+After calculating the expected score, I will compare it with the player’s actual tournament score. I plan to calculate the difference using:
+
+$$
+\text{Performance Difference} =
+\text{Actual Score} - \text{Expected Score}
+$$
+
+A positive difference will indicate that the player overperformed relative to their Elo rating, while a negative difference will indicate that the player underperformed.
+
+Finally, I will sort the players based on this difference. The five players with the largest positive differences will be reported as the biggest overperformers, and the five players with the largest negative differences will be reported as the biggest underperformers.
+
+I plan to complete the calculations in R using dplyr, since it will allow me to organize the tournament data, calculate expected scores, summarize results by player, and rank the final results efficiently.
+
+Source:
+singingbanana. (2019, February 15). The Elo Rating System for Chess and Beyond [Video]. YouTube. 
