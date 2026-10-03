@@ -1,0 +1,231 @@
+---
+title: "5A Airline Delays"
+author: "Lakeranie Boodram"
+date: "2026-10-02"
+output: html_document
+---
+
+## Assignment 5A - Airline Delays
+
+This analysis compares the arrival performance of Alaska Airlines and America West across five destinations. The data will first be imported in wide format, cleaned and transformed into tidy long format, and then used to compare on-time and delayed flight percentages.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+```
+
+### 3. Create and Upload the CSV File
+
+The airline delay data was recreated in a CSV file named `airline_delays.csv` and uploaded to my public GitHub repository. The file contains the original wide-format data for Alaska Airlines and America West across five destinations.
+
+### 4. Read the CSV from GitHub
+
+```{r, warning =FALSE}
+url <- "https://raw.githubusercontent.com/LBoodram26/Data607_-Week-5/refs/heads/main/airline_delays.csv"
+
+airline_wide <- read.csv(url)
+
+airline_wide
+```
+
+### 5. Inspect the Data
+
+```{r}
+str(airline_wide)
+
+summary(airline_wide)
+
+colSums(is.na(airline_wide))
+```
+### 6. Transform the Data from Wide to Long Format
+
+The original dataset is in wide format, with each destination stored in a separate column. I will use `pivot_longer()` from the `tidyr` package to transform the data into a tidy long format.
+
+```{r}
+airline_long <- airline_wide %>%
+  pivot_longer(
+    cols = c(Los.Angeles, Phoenix, San.Diego, San.Francisco, Seattle),
+    names_to = "city",
+    values_to = "flights"
+  )
+
+airline_long
+```
+
+### 7. Count Analysis
+
+Before comparing percentages, I will summarize the total number of on-time and delayed flights for each airline.
+
+```{r}
+count_analysis <- airline_long %>%
+  group_by(airline, status) %>%
+  summarise(
+    total_flights = sum(flights),
+    .groups = "drop"
+  )
+
+count_analysis
+```
+### 8. Overall Airline Performance
+
+To compare the airlines fairly, I will calculate percentages rather than relying only on raw flight counts.
+
+```{r}
+overall_performance <- airline_long %>%
+  group_by(airline, status) %>%
+  summarise(
+    flights = sum(flights),
+    .groups = "drop"
+  ) %>%
+  group_by(airline) %>%
+  mutate(
+    total_flights = sum(flights),
+    percentage = round((flights / total_flights) * 100, 2)
+  )
+
+overall_performance
+```
+### 9. Compare Airline Performance by City
+
+Next, I will compare the percentage of on-time and delayed flights for each airline within each destination.
+
+```{r}
+city_performance <- airline_long %>%
+  group_by(airline, city, status) %>%
+  summarise(
+    flights = sum(flights),
+    .groups = "drop"
+  ) %>%
+  group_by(airline, city) %>%
+  mutate(
+    total_flights = sum(flights),
+    percentage = round((flights / total_flights) * 100, 2)
+  )
+
+city_performance
+```
+### 10. Create a Clean On-Time Percentage Table
+
+To make the city-by-city comparison easier to interpret, I will display only the on-time percentage for each airline.
+
+```{r}
+on_time_table <- city_performance %>%
+  filter(status == "on time") %>%
+  select(airline, city, percentage) %>%
+  pivot_wider(
+    names_from = airline,
+    values_from = percentage
+  )
+
+on_time_table
+```
+
+The city-by-city results show that Alaska Airlines had a higher on-time percentage than America West in every destination. However, the overall results showed America West with a higher on-time percentage. This difference occurs because the airlines did not have the same number of flights in each city. America West had a very large number of flights in Phoenix, where its on-time performance was relatively strong, which heavily influenced its overall percentage.
+
+### 11. Visualize On-Time Performance by City
+
+To make the differences between the two airlines easier to compare, I will create a bar chart of the on-time percentages for each destination.
+
+```{r}
+on_time_chart <- city_performance %>%
+  filter(status == "on time") %>%
+  ggplot(aes(x = city, y = percentage, fill = airline)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "On-Time Flight Percentage by City",
+    x = "City",
+    y = "On-Time Percentage",
+    fill = "Airline"
+  ) +
+  theme_minimal()
+
+on_time_chart
+```
+
+The chart shows that Alaska Airlines had a higher on-time percentage than America West in each of the five cities. The largest differences appear in San Francisco and Seattle, while the percentages are closer in Phoenix.
+
+### 12. Explain the Difference Between Overall and City-by-City Results
+
+Although America West had a higher overall on-time percentage, Alaska Airlines performed better in every individual city. This happens because the two airlines had very different numbers of flights across the five destinations.
+
+America West had a very large number of flights in Phoenix, where its on-time percentage was relatively high. Because Phoenix made up such a large share of America West's total flights, it had a strong influence on the airline's overall percentage.
+
+Alaska Airlines had fewer flights in Phoenix and a larger share of flights in other cities, including Seattle and San Francisco, where the overall on-time percentages were lower. As a result, Alaska's overall percentage was lower even though it performed better than America West within each individual city.
+
+This is an example of Simpson's paradox, where a trend that appears within separate groups can reverse when the groups are combined.
+
+### 13. Overall On-Time Percentage Comparison
+
+```{r}
+overall_on_time <- overall_performance %>%
+  filter(status == "on time") %>%
+  select(airline, percentage)
+
+overall_on_time
+```
+Overall, America West had an on-time percentage of 89.11%, compared with 86.73% for Alaska Airlines. However, the city-level analysis shows that Alaska had the higher on-time percentage in all five destinations. This confirms that the difference in overall performance is caused by the distribution of flights across cities rather than better performance by America West within each destination.
+
+### 14. Conclusion
+
+The analysis shows that the way airline performance is summarized can affect the conclusion. When the data is combined across all five cities, America West appears to perform better, with an overall on-time percentage of 89.11% compared with 86.73% for Alaska Airlines.
+
+However, when each destination is examined separately, Alaska Airlines has a higher on-time percentage in all five cities. This difference is caused by the unequal distribution of flights across destinations, especially the large number of America West flights in Phoenix.
+
+This analysis demonstrates why percentages should be examined both overall and within individual groups. Looking only at the overall percentage could lead to a misleading conclusion about which airline actually performs better within each destination. The results provide an example of Simpson's paradox.
+
+### 15. References and Resources
+
+The following resources were used as references for creating, cleaning, transforming, analyzing, and presenting the airline delay data:
+
+1. **Course Assignment Data**
+- Numbersense, Kaiser Fung, McGraw Hill, 2013.
+-Provided in Week 5 assignment
+
+2. **tidyr – pivot_longer()**
+- Tidyverse. “Pivot data from wide to long.”
+- https://tidyr.tidyverse.org/reference/pivot_longer.html
+- Used as a reference for transforming the original wide-format airline dataset into long/tidy format.
+
+3. **tidyr – Pivoting Data**
+- Tidyverse. “Pivoting.”
+- https://tidyr.tidyverse.org/articles/pivot.html
+- Provides additional examples of restructuring datasets using `pivot_longer()` and `pivot_wider()`.
+
+4. **dplyr – group_by()**
+- Tidyverse. “Group by one or more variables.”
+- https://dplyr.tidyverse.org/reference/group_by
+- Used for grouping the airline data by airline, city, and flight status.
+
+5. **dplyr – summarise()**
+- Tidyverse. “Summarise each group down to one row.”
+- https://dplyr.tidyverse.org/reference/summarise.html
+- Used to calculate total numbers of on-time and delayed flights.
+
+6. **dplyr – mutate()**
+- Tidyverse. “Create, modify, and delete columns.”
+- https://dplyr.tidyverse.org/reference/mutate.html
+- Used to calculate total flights and on-time/delay percentages.
+
+7. **ggplot2 – Bar Charts**
+- Tidyverse. “Bar charts: geom_bar() and geom_col().”
+- https://ggplot2.tidyverse.org/reference/geom_bar.html
+- Used as a reference for creating the grouped bar chart comparing airline on-time percentages by city.
+
+8. **R Markdown Documentation**
+- Posit/RStudio. “Dynamic Documents for R.”
+- https://rmarkdown.rstudio.com/docs/
+- Used as a reference for structuring the `.Rmd` file with Markdown text and executable R code chunks.
+
+9. **R Markdown HTML Output**
+- Posit/RStudio. “Convert to an HTML document.”
+- https://rmarkdown.rstudio.com/docs/reference/html_document.html
+- Used as a reference for rendering the R Markdown analysis as an HTML document.
+
+10. **GitHub Raw CSV File**
+- Airline delay dataset recreated from the course assignment:
+- https://raw.githubusercontent.com/LBoodram26/Data607_-Week-5/refs/heads/main/airline_delays.csv
+
+
