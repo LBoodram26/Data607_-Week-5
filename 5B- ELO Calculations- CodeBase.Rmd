@@ -1,0 +1,218 @@
+---
+title: "5B- ELO Calculations- CodeBase"
+author: "Lakeranie Boodram"
+date: "2026-10-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+## Load Libraries
+```{r}
+library(dplyr)
+library(stringr)
+```
+
+## Import Tournament Data
+
+```{r}
+url <- "https://raw.githubusercontent.com/LBoodram26/Data607_-Week-5/refs/heads/main/tournamentinfo.txt"
+
+tournament <- readLines(url)
+
+head(tournament, 20)
+```
+## Extract Player Information
+
+```{r}
+player_lines <- tournament[seq(5, length(tournament), by = 3)]
+
+players <- data.frame(
+  player_number = as.numeric(str_extract(player_lines, "^\\s*\\d+")),
+  player_name = str_trim(str_sub(player_lines, 8, 40)),
+  total_points = as.numeric(str_extract(str_sub(player_lines, 41, 50), "\\d+\\.?\\d*"))
+)
+
+head(players)
+```
+## Extract Player Ratings
+
+```{r}
+rating_lines <- tournament[seq(6, length(tournament), by = 3)]
+
+pre_ratings <- as.numeric(
+  str_match(rating_lines, "R:\\s*(\\d+)")[, 2]
+)
+
+players$pre_rating <- pre_ratings
+
+head(players)
+```
+## Extract Round Results
+
+```{r}
+round_data <- str_extract_all(
+  player_lines,
+  "[WLD]\\s*\\d+"
+)
+
+head(round_data)
+```
+## Create Game-Level Data
+
+```{r}
+game_data <- data.frame(
+  player_number = rep(players$player_number, lengths(round_data)),
+  result = unlist(lapply(round_data, function(x) str_extract(x, "[WLD]"))),
+  opponent_number = as.numeric(
+    unlist(lapply(round_data, function(x) str_extract(x, "\\d+")))
+  )
+)
+
+head(game_data, 15)
+```
+## Add Player and Opponent Ratings
+
+```{r}
+game_data <- game_data %>%
+  left_join(
+    players %>% select(player_number, pre_rating),
+    by = "player_number"
+  ) %>%
+  rename(player_rating = pre_rating)
+
+game_data <- game_data %>%
+  left_join(
+    players %>% select(player_number, pre_rating),
+    by = c("opponent_number" = "player_number")
+  ) %>%
+  rename(opponent_rating = pre_rating)
+
+head(game_data, 15)
+```
+## Calculate Expected Elo Score
+
+```{r}
+game_data <- game_data %>%
+  mutate(
+    expected_score = 1 / (
+      1 + 10^((opponent_rating - player_rating) / 400)
+    )
+  )
+
+head(game_data, 15)
+```
+## Convert Results to Actual Scores
+
+```{r}
+game_data <- game_data %>%
+  mutate(
+    actual_score = case_when(
+      result == "W" ~ 1,
+      result == "D" ~ 0.5,
+      result == "L" ~ 0
+    )
+  )
+
+head(game_data, 15)
+```
+## Summarize Player Performance
+
+```{r}
+player_performance <- game_data %>%
+  group_by(player_number) %>%
+  summarise(
+    expected_total = sum(expected_score, na.rm = TRUE),
+    actual_total = sum(actual_score, na.rm = TRUE)
+  ) %>%
+  left_join(
+    players %>% select(
+      player_number,
+      player_name,
+      pre_rating,
+      total_points
+    ),
+    by = "player_number"
+  ) %>%
+  mutate(
+    performance_difference = actual_total - expected_total
+  ) %>%
+  select(
+    player_number,
+    player_name,
+    pre_rating,
+    total_points,
+    expected_total,
+    actual_total,
+    performance_difference
+  )
+
+head(player_performance, 10)
+```
+
+## Top 5 Overperformers
+
+```{r}
+top_overperformers <- player_performance %>%
+  arrange(desc(performance_difference)) %>%
+  slice_head(n = 5)
+
+top_overperformers
+```
+
+## Top 5 Underperformers
+
+```{r}
+top_underperformers <- player_performance %>%
+  arrange(performance_difference) %>%
+  slice_head(n = 5)
+
+top_underperformers
+```
+## Interpretation of Results
+
+The results show that Aditya Bajaj had the largest positive performance difference. Based on his Elo rating, his expected score was approximately 1.95 points, but he earned 6.0 points in his rated games. This means he performed about 4.05 points better than expected.
+
+The other strongest overperformers were Zachary James Houghton, Anvit Rao, Jacob Alexander Lavalley, and Stefano Lee.
+
+Loren Schwiebert had the largest negative performance difference. His expected score was approximately 6.28 points, but he earned 3.5 points, which was about 2.78 points below his expected performance.
+
+The other largest underperformers were George Avery Jones, Larry Hodge, Jared Ge, and Rishi Shetty.
+
+Overall, the Elo calculations show how a player's actual performance against rated opponents can differ from the performance predicted by their pre-tournament Elo rating.
+
+## Sources
+
+1. singingbanana. (2019, February 15). *The Elo Rating System for Chess and Beyond* [Video]. YouTube.
+https://www.youtube.com/watch?v=AsYfbmp0To0
+
+2. *Tournament Information Dataset*. GitHub.
+https://raw.githubusercontent.com/LBoodram26/Data607_-Week-5/refs/heads/main/tournamentinfo.txt
+
+3. Wickham, H., François, R., Henry, L., Müller, K., & Vaughan, D. *dplyr: A Grammar of Data Manipulation*. Tidyverse.
+https://dplyr.tidyverse.org/
+
+4. Tidyverse. *Mutating Joins – dplyr*.
+https://dplyr.tidyverse.org/reference/mutate-joins.html
+
+5. Tidyverse. *summarise(): Summarise Each Group Down to One Row – dplyr*.
+https://dplyr.tidyverse.org/reference/summarise.html
+
+6. Tidyverse. *arrange(): Order Rows Using Column Values – dplyr*.
+https://dplyr.tidyverse.org/reference/arrange.html
+
+7. Tidyverse. *slice(): Subset Rows Using Their Positions – dplyr*.
+https://dplyr.tidyverse.org/reference/slice.html
+
+8. Wickham, H. *stringr: Simple, Consistent Wrappers for Common String Operations*. Tidyverse.
+https://stringr.tidyverse.org/
+
+9. Tidyverse. *str_extract(): Extract the Complete Match – stringr*.
+https://stringr.tidyverse.org/reference/str_extract.html
+
+10. Tidyverse. *str_match(): Extract Components from a Match – stringr*.
+https://stringr.tidyverse.org/reference/str_match.html
+
+11. Posit. *R Markdown: HTML Document*.
+https://rmarkdown.rstudio.com/docs/reference/html_document.html
